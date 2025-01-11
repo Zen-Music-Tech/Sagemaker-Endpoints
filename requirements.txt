@@ -1,0 +1,9 @@
+boto3                      
+sagemaker        
+torch                 
+librosa                   
+timm                    
+einops                    
+nnAudio               
+python-dotenv             
+
