@@ -68,7 +68,7 @@ SageMaker-Endpoints/
    
    Create a `.env` file in the project root:
    ```plaintext
-   AWS_ROLE=arn:aws:iam::123456789012:role/service-role/AmazonSageMaker-ExecutionRole
+   AWS_ROLE=your_arn_number
    TEXT_MODEL_S3_PATH=s3://your-bucket-name/model.tar.gz
    AUDIO_MODEL_S3_PATH=s3://your-bucket-name/model.tar.gz
    TEXT_ENDPOINT_NAME=embedd-text
