@@ -25,8 +25,8 @@ sagemaker = boto3.client(
     region_name=aws_region,
 )
 
-# Test S3 upload
-s3.upload_file("model.tar.gz", "tracks-dev", "model.tar.gz")
+# # Test S3 upload
+# s3.upload_file("model.tar.gz", "tracks-dev", "model.tar.gz")
 
 # Test SageMaker endpoint listing
 response = sagemaker.list_endpoints()
