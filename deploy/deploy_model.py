@@ -14,10 +14,8 @@ logger = logging.getLogger(__name__)
 
 # Load configuration from .env
 ROLE = os.getenv("AWS_ROLE")
-TEXT_MODEL_S3_PATH = os.getenv("TEXT_MODEL_S3_PATH")
-AUDIO_MODEL_S3_PATH = os.getenv("AUDIO_MODEL_S3_PATH")
-TEXT_ENDPOINT_NAME = os.getenv("TEXT_ENDPOINT_NAME", "embedd-text")
-AUDIO_ENDPOINT_NAME = os.getenv("AUDIO_ENDPOINT_NAME", "embedd-audio")
+MODEL_S3_PATH = os.getenv("MODEL_S3_PATH")  # Combined model path in S3
+ENDPOINT_NAME = os.getenv("ENDPOINT_NAME", "multi-model-endpoint")  # Name of the MME
 FRAMEWORK_VERSION = os.getenv("FRAMEWORK_VERSION", "2.2")
 PY_VERSION = os.getenv("PY_VERSION", "py310")
 INSTANCE_TYPE = os.getenv("INSTANCE_TYPE", "ml.g4dn.xlarge")  # Default instance type
@@ -38,14 +36,16 @@ def delete_endpoint_config(endpoint_config_name):
             logger.error(f"Error deleting endpoint configuration {endpoint_config_name}: {e}")
 
 
-def deploy_model(model_data, entry_point, endpoint_name, instance_type):
+def deploy_multi_model_endpoint(model_data, entry_point, endpoint_name, instance_type):
     """
-    Deploy a model to SageMaker with instance-based inference.
+    Deploy a multi-model endpoint to SageMaker.
     """
     # Delete existing endpoint configuration
     delete_endpoint_config(endpoint_name)
 
-    logger.info(f"Deploying model {entry_point} to endpoint {endpoint_name} with instance type {instance_type}...")
+    logger.info(f"Deploying multi-model endpoint {endpoint_name} with instance type {instance_type}...")
+
+    # Define the PyTorch model for MME
     model = PyTorchModel(
         model_data=model_data,
         role=ROLE,
@@ -53,12 +53,14 @@ def deploy_model(model_data, entry_point, endpoint_name, instance_type):
         framework_version=FRAMEWORK_VERSION,
         py_version=PY_VERSION,
     )
+
+    # Deploy the multi-model endpoint
     predictor = model.deploy(
         initial_instance_count=1,  # Number of instances
         instance_type=instance_type,
         endpoint_name=endpoint_name,
     )
-    logger.info(f"Model deployed successfully to endpoint: {endpoint_name}")
+    logger.info(f"Multi-model endpoint deployed successfully: {endpoint_name}")
     return predictor
 
 
@@ -108,19 +110,16 @@ def main(action):
     instance_type = INSTANCE_TYPE  # Load instance type from .env
 
     if action == "deploy":
-        # Deploy text and audio models
-        deploy_model(TEXT_MODEL_S3_PATH, "embed_text.py", TEXT_ENDPOINT_NAME, instance_type)
-        deploy_model(AUDIO_MODEL_S3_PATH, "embed_audio.py", AUDIO_ENDPOINT_NAME, instance_type)
+        # Deploy the multi-model endpoint
+        deploy_multi_model_endpoint(MODEL_S3_PATH, "embed_combined.py", ENDPOINT_NAME, instance_type)
 
     elif action == "delete":
-        # Delete endpoints and configurations
-        delete_endpoint(TEXT_ENDPOINT_NAME)
-        delete_endpoint(AUDIO_ENDPOINT_NAME)
+        # Delete the endpoint and configuration
+        delete_endpoint(ENDPOINT_NAME)
 
     elif action == "status":
-        # Check endpoint statuses
-        check_endpoint_status(TEXT_ENDPOINT_NAME)
-        check_endpoint_status(AUDIO_ENDPOINT_NAME)
+        # Check endpoint status
+        check_endpoint_status(ENDPOINT_NAME)
 
     else:
         logger.error("Invalid action. Use 'deploy', 'delete', or 'status'.")

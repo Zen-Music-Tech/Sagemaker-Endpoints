@@ -12,14 +12,13 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load endpoint names from .env
-TEXT_ENDPOINT_NAME = os.getenv("TEXT_ENDPOINT_NAME", "embedd-text")
-AUDIO_ENDPOINT_NAME = os.getenv("AUDIO_ENDPOINT_NAME", "embedd-audio")
+# Load unified endpoint name from .env
+ENDPOINT_NAME = os.getenv("ENDPOINT_NAME", "multi-model-endpoint")
 
 
 def query_endpoint(predictor, payload, input_type="json"):
     """
-    Query a SageMaker endpoint with the given payload.
+    Query the unified SageMaker endpoint with the given payload.
     """
     try:
         predictor.content_type = f"application/{input_type}"
@@ -40,46 +39,47 @@ def query_endpoint(predictor, payload, input_type="json"):
         return None
 
 
-def infer_audio(file_urls):
-    """
-    Perform inference on audio inputs using the embedd-audio endpoint.
-    """
-    if not isinstance(file_urls, list):
-        raise ValueError("Input file URLs must be a list of strings.")
-    
-    logger.info(f"Preparing payload for audio inference: {file_urls}")
-    payload = {"fileUrls": file_urls}
-    audio_predictor = Predictor(endpoint_name=AUDIO_ENDPOINT_NAME)
-    
-    logger.info(f"Initialized predictor for endpoint: {AUDIO_ENDPOINT_NAME}")
-    return query_endpoint(audio_predictor, payload)
-
-
 def infer_text(texts):
     """
-    Perform inference on text inputs using the embedd-text endpoint.
+    Perform inference on text inputs using the unified endpoint.
     """
     if not isinstance(texts, list):
         raise ValueError("Input texts must be a list of strings.")
     
     logger.info(f"Preparing payload for text inference: {texts}")
     payload = {"texts": texts}
-    text_predictor = Predictor(endpoint_name=TEXT_ENDPOINT_NAME)
+    unified_predictor = Predictor(endpoint_name=ENDPOINT_NAME)
     
-    logger.info(f"Initialized predictor for endpoint: {TEXT_ENDPOINT_NAME}")
-    return query_endpoint(text_predictor, payload)
+    logger.info(f"Initialized predictor for endpoint: {ENDPOINT_NAME}")
+    return query_endpoint(unified_predictor, payload)
+
+
+def infer_audio(file_urls):
+    """
+    Perform inference on audio inputs using the unified endpoint.
+    """
+    if not isinstance(file_urls, list):
+        raise ValueError("Input file URLs must be a list of strings.")
+    
+    logger.info(f"Preparing payload for audio inference: {file_urls}")
+    payload = {"fileUrls": file_urls}
+    unified_predictor = Predictor(endpoint_name=ENDPOINT_NAME)
+    
+    logger.info(f"Initialized predictor for endpoint: {ENDPOINT_NAME}")
+    return query_endpoint(unified_predictor, payload)
 
 
 def main():
     # Example: Text inference
-    # texts = ["hello world", "this is a test"]
-    # logger.info(f"Running inference on texts: {texts}")
-    # text_results = infer_text(texts)
-    # logger.info(f"Text inference results: {text_results}")
+    texts = ["hello world", "this is a test"]
+    logger.info(f"Running inference on texts: {texts}")
+    text_results = infer_text(texts)
+    logger.info(f"Text inference results: {text_results}")
 
     # Example: Audio inference
     file_urls = [
-        "s3://tracks-dev/Ed Sheeran-Shape of You.mp3", "s3://tracks-dev/Ed Sheeran-Shape of You.mp3"
+        "s3://tracks-dev/Ed Sheeran-Shape of You.mp3",
+        "s3://tracks-dev/Ed Sheeran-Shape of You.mp3"
     ]
     logger.info(f"Running inference on audio files: {file_urls}")
     audio_results = infer_audio(file_urls)
